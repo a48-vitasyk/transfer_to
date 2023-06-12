@@ -200,18 +200,28 @@ function scrap-db-local () {
 
 function volume_of_databases () {
 
-    VOLUME_DBS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db" | jq -r '.doc.elem[].name."$"')
-
+    VOLUME_DBS_HOSTS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db" | jq -r '[.doc.elem[] | {"name": .name."$", "host": .dbhost."$"}]')
     totalSize=0
-    for DB in $VOLUME_DBS; do
+    for row in $(echo "${VOLUME_DBS_HOSTS}" | jq -r '.[] | @base64'); do
+        _jq() {
+            echo ${row} | base64 --decode | jq -r ${1}
+        }
+        DB=$(_jq '.name')
+        DB_HOST=$(_jq '.host')
 
         DB_USER=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db.users&elname='%27$DB%27'&elid=$DB->mysql->$USER_ISP" | jq -r '.doc.elem[].name."$"')
 
         DB_PASS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db.users.edit&elname=$DB_USER&elid=$DB_USER&plid=$DB->mysql->$USER_ISP" | jq -r '.doc.password."$"')
 
+        DB_PORT=$(echo $DB_HOST | grep -o -E ':[0-9]+' | cut -d: -f2)
+        if [ -z "$DB_PORT" ]
+        then
+            DB_PORT=3306
+        fi
+
         QUERY='SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as "Size (MB)" FROM information_schema.TABLES WHERE table_schema = "'$DB'" GROUP BY table_schema;'
 
-        DB_SIZE=$(sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysql -u $DB_USER -p$DB_PASS -e '$QUERY'" | tail -n1)
+        DB_SIZE=$(sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysql -u $DB_USER -p$DB_PASS --host=127.0.0.1 --port=$DB_PORT -e '$QUERY'" | tail -n1)
 
         echo "Database $DB size: $DB_SIZE MB"
 
@@ -615,8 +625,8 @@ done
         if [[ $REPLY =~ ^[Yy]$ ]]; then
             for DOMAIN in "${MISSING_DOMAINS[@]}"; do
 
-                # If domain is not "databases"
-                if [[ "$DOMAIN" != "databases" ]]; then
+                # If domain is not "database"
+                if [[ "$DOMAIN" != "database" ]]; then
                     echo "Downloading domain: $DOMAIN"
                     SOURCE_DOMAIN=$SOURCE/$DOMAIN
 
@@ -842,14 +852,14 @@ function replace_config_urls () {
     do
       if grep -q "/var/www/$USER_ISP/data/www/" "$file"; then
         echo "Осуществляется замена в файле: $file"
-        awk '/'"\/var\/www\/$USER_ISP\/data\/www\/"'/{print "Замена в файле: " FILENAME "\nСтарая строка: " $0}
-             {gsub("'"\/var\/www\/$USER_ISP\/data\/www\/"'", "'"\/home\/$USER_CPANEL\/"'");
-             print "Новая строка: " $0 "\n"}' "$file" | tee -a replace_paths.txt
+        awk '{original = $0; change = gsub("'"\/var\/www\/$USER_ISP\/data\/www\/"'", "'"\/home\/$USER_CPANEL\/"'")}
+             change {print "Старая строка: " original "\nНовая строка: " $0}' "$file" | tee -a replace_paths.txt
         sed -i 's/\/var\/www\/'$USER_ISP'\/data\/www\//\/home\/'$USER_CPANEL'\//g' "$file"
       fi
     done
-
 }
+
+
 
 function delete_all_db_user_cpanel () {
 
@@ -958,17 +968,17 @@ function create_domain () {
 
     for DOMAIN in $DOMAINS
     do
-      RESPONSE=$(curl -k -s -H "Authorization: Basic $(echo -n '${USER_CPANEL}:${PASS_CPANEL}' | base64)" -d "cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=addaddondomain&subdomain=${DOMAIN}&newdomain=${DOMAIN}&ftp_is_optional=1&dir=${DOMAIN}" "https://${HOST_CPANEL}:2083/json-api/cpanel")
+      RESPONSE=$(curl -k -s -H "Authorization: Basic $(echo -n "${USER_CPANEL}:${PASS_CPANEL}" | base64)" -d "cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=addaddondomain&subdomain=${DOMAIN}&newdomain=${DOMAIN}&ftp_is_optional=1&dir=${DOMAIN}" "https://${HOST_CPANEL}:2083/json-api/cpanel")
 
       RESULT=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].result')
 
       if [ "$RESULT" -eq 1 ]; then
         echo "$DOMAIN: SUCCESS" >> created_domains.txt
-        log "$DOMAIN: SUCCESS" >> created_domains.txt
+        log "$DOMAIN: SUCCESS"
       else
         REASON=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].reason')
         echo "$DOMAIN: FAILED, Reason: $REASON" >> created_domains.txt
-        log "$DOMAIN: FAILED, Reason: $REASON" >> created_domains.txt
+        log "$DOMAIN: FAILED, Reason: $REASON"
       fi
     done
         curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
