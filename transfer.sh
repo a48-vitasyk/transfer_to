@@ -636,35 +636,6 @@ done
 
                      if [ $? -eq 0 ]; then
                         log "rsync_from completed successfully for domain $DOMAIN"
-
-                            curl -X POST -H "Authorization: Bearer ${OAUTH_TOKEN}" -H "Content-type: application/json;charset=utf-8" --data "{
-                                \"channel\":\"${BOT_ID}\",
-                                \"attachments\": [
-                                    {
-                                        \"color\": \"#36a64f\",
-                                        \"blocks\": [
-                                            {
-                                                \"type\": \"header\",
-                                                \"text\": {
-                                                    \"type\": \"plain_text\",
-                                                    \"text\": \"Transfer Missing Domains for $USER_CPANEL COMPLETED - $WORKER\",
-                                                    \"emoji\": true
-                                                }
-                                            },
-                                            {
-                                                \"type\": \"divider\"
-                                            },
-                                            {
-                                                \"type\": \"section\",
-                                                \"text\": {
-                                                    \"type\": \"mrkdwn\",
-                                                    \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
-                                                }
-                                            }
-                                        ]
-                                    }
-                                ]
-                            }" https://slack.com/api/chat.postMessage
                     else
                         log "Error executing rsync_from for domain $DOMAIN"
                     fi
@@ -675,7 +646,34 @@ done
             done
         fi
     fi
-
+        curl -X POST -H "Authorization: Bearer ${OAUTH_TOKEN}" -H "Content-type: application/json;charset=utf-8" --data "{
+        \"channel\":\"${BOT_ID}\",
+        \"attachments\": [
+            {
+                \"color\": \"#36a64f\",
+                \"blocks\": [
+                    {
+                        \"type\": \"header\",
+                        \"text\": {
+                            \"type\": \"plain_text\",
+                            \"text\": \"Transfer Missing Domains for $USER_CPANEL COMPLETED - $WORKER\",
+                            \"emoji\": true
+                        }
+                    },
+                    {
+                        \"type\": \"divider\"
+                    },
+                    {
+                        \"type\": \"section\",
+                        \"text\": {
+                            \"type\": \"mrkdwn\",
+                            \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
+                        }
+                    }
+                ]
+            }
+        ]
+    }" https://slack.com/api/chat.postMessage
 }
 
 
@@ -848,12 +846,12 @@ function upload_dump_on_cpanel () {
 
 function replace_config_urls () {
 
-    grep -rl "$USER_ISP" .. | while read file
+    grep -rl "$USER_ISP" . | while read file
     do
       if grep -q "/var/www/$USER_ISP/data/www/" "$file"; then
         echo "Осуществляется замена в файле: $file"
         awk '{original = $0; change = gsub("'"\/var\/www\/$USER_ISP\/data\/www\/"'", "'"\/home\/$USER_CPANEL\/"'")}
-             change {print "Старая строка: " original "\nНовая строка: " $0}' "$file" | tee -a replace_paths.txt
+             change {print "Замена в файле: " FILENAME "\nСтрока: " NR "\nСтарая строка: " original "\nНовая строка: " $0 "\n"}' "$file" | tee -a replace_paths.txt
         sed -i 's/\/var\/www\/'$USER_ISP'\/data\/www\//\/home\/'$USER_CPANEL'\//g' "$file"
       fi
     done
