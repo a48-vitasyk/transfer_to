@@ -710,6 +710,12 @@ function create_db_on_cpanel () {
          # Replace all special characters with "_" in DB_USER
          DB_USER=$(echo "$DB_USER" | tr -c '[:alnum:]' '_')
 
+         # Remove trailing "_" in DB_USER
+         DB_USER=$(echo "$DB_USER" | sed 's/_*$//')
+
+         # Remove leading "_" in DB_USER
+         DB_USER=$(echo "$DB_USER" | sed 's/^_*//')
+
         # Create a database on cPanel
         uapi --output=jsonpretty Mysql create_database name="$USER_CPANEL"_"$DB" > /dev/null
 
