@@ -12,9 +12,6 @@ PASS_CPANEL=""
 USER_CPANEL=$(whoami)
 HOST_CPANEL=$(hostname)
 
-#REMOTE_SERVER_PASS=""
-#REMOTE_SERVER_IP=""
-
 # Authentication data
 authinfo="$USER_ISP:$PASSWORD"
 
