@@ -1017,6 +1017,31 @@ function create_domain () {
 }
 
 
+function delete_domain () {
+
+    SUB_DOMAIN=$(uapi --output=jsonpretty DomainInfo list_domains | jq -r '.result.data.main_domain')
+
+    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
+
+    for DOMAIN in $DOMAINS
+    do
+      RESPONSE=$(curl -k -s -H "Authorization: Basic $(echo -n "${USER_CPANEL}:${PASS_CPANEL}" | base64)" -d "cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=deladdondomain&domain=${DOMAIN}&subdomain=${DOMAIN}_${SUB_DOMAIN}" "https://${HOST_CPANEL}:2083/json-api/cpanel")
+
+      RESULT=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].result')
+
+      if [ "$RESULT" -eq 1 ]; then
+        echo "$DOMAIN: DELETE SUCCESS" >> deleted_domains.txt
+        log "$DOMAIN: DELETE SUCCESS"
+      else
+        REASON=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].reason')
+        echo "$DOMAIN: DELETE FAILED, Reason: $REASON" >> deleted_domains.txt
+        log "$DOMAIN: DELETE FAILED, Reason: $REASON"
+      fi
+    done
+}
+
+
+
 function create_mailbox () {
     # Get a list of all emails
     emails=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=email" | jq -r '.doc.elem[] | .name."$"')
@@ -1252,14 +1277,34 @@ function process_transfer () {
             ;;
         7)
             clear
-            read -p "Create domains? (y/n) " RESPONSE
-            if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
-                create_domain
-                echo "Domains creating completed."
-            else
-                echo "Domains creating - Action canceled."
-            fi
-            ;;
+            echo "1. Create domains"
+            echo "2. Delete domains"
+            read -p "Choose an action (1/2) " RESPONSE
+
+            case $RESPONSE in
+              1)
+                read -p "Create domains? (y/n) " RESPONSE
+                if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
+                    create_domain
+                    echo "Domains creating completed."
+                else
+                    echo "Domains creating - Action canceled."
+                fi
+                ;;
+              2)
+                read -p "Delete domains? (y/n) " RESPONSE
+                if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
+                    delete_domain
+                    echo "Domains deletion completed."
+                else
+                    echo "Domains deletion - Action canceled."
+                fi
+                ;;
+              *)
+                echo "Invalid option"
+                ;;
+            esac
+
         8)
             clear
             read -p "Create mailboxes? (y/n) " RESPONSE
