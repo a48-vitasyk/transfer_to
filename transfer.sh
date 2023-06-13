@@ -1157,7 +1157,7 @@ function process_transfer () {
     echo "4. Create DB and upload dumps in cPanel"
     echo "5. Transfer missing directories"
     echo "6. Replace PATHs in configs"
-    echo "7. Create DOMAINS in cPanel"
+    echo "7. Create/Delete DOMAINS in cPanel"
     echo "8. Create mailboxes (Only after adding domains)"
     echo "9. Delete all users & db in cPanel"
     echo "0. End of work"
