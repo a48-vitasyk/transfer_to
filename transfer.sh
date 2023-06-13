@@ -84,6 +84,12 @@ function scrap-db () {
             # Dump the database on the remote server
             sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h 127.0.0.1 --port $DB_PORT -u$DB_USER -p$DB_PASS $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
 
+            # Check if dump was successful
+            if [ $? -ne 0 ]; then
+                # If not, try without specifying host and port
+                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
+            fi
+
             # Write the information about the database, the user, the password and the dump file
             echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> db_info.txt
             log "${DB_USER}_${DB}_dump.sql  wrote  >> db_info.txt"
@@ -160,6 +166,12 @@ function scrap-db-local () {
             # Dump the database on the remote server and save it on the local server
             sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h 127.0.0.1 --port $DB_PORT -u$DB_USER -p$DB_PASS $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
 
+            # Check if dump was successful
+            if [ $? -ne 0 ]; then
+                # If not, try without specifying host and port
+                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS $DB" > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql
+            fi
+
             # Write the information about the database, the user, the password and the dump file
             echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> db_info.txt
             log "${DB_USER}_${DB}_dump.sql  wrote  >> db_info.txt"
@@ -222,6 +234,12 @@ function volume_of_databases () {
         QUERY='SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) as "Size (MB)" FROM information_schema.TABLES WHERE table_schema = "'$DB'" GROUP BY table_schema;'
 
         DB_SIZE=$(sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysql -u $DB_USER -p$DB_PASS --host=127.0.0.1 --port=$DB_PORT -e '$QUERY'" | tail -n1)
+
+        # Check if query was successful
+        if [ $? -ne 0 ]; then
+            # If not, try without specifying host and port
+            DB_SIZE=$(sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysql -u $DB_USER -p$DB_PASS -e '$QUERY'" | tail -n1)
+        fi
 
         echo "Database $DB size: $DB_SIZE MB"
 
