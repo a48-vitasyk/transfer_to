@@ -1304,7 +1304,7 @@ function process_transfer () {
                 echo "Invalid option"
                 ;;
             esac
-
+                ;;
         8)
             clear
             read -p "Create mailboxes? (y/n) " RESPONSE
