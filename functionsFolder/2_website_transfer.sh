@@ -1,7 +1,7 @@
-function volume_of_databases () {
-
+function volume_of_databases() {
     VOLUME_DBS_HOSTS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db" | jq -r '[.doc.elem[] | {"name": .name."$", "host": .dbhost."$"}]')
     totalSize=0
+
     for row in $(echo "${VOLUME_DBS_HOSTS}" | jq -r '.[] | @base64'); do
         _jq() {
             echo ${row} | base64 --decode | jq -r ${1}
@@ -14,8 +14,7 @@ function volume_of_databases () {
         DB_PASS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db.users.edit&elname=$DB_USER&elid=$DB_USER&plid=$DB->mysql->$USER_ISP" | jq -r '.doc.password."$"')
 
         DB_PORT=$(echo $DB_HOST | grep -o -E ':[0-9]+' | cut -d: -f2)
-        if [ -z "$DB_PORT" ]
-        then
+        if [ -z "$DB_PORT" ]; then
             DB_PORT=3306
         fi
 
@@ -33,6 +32,7 @@ function volume_of_databases () {
 
         totalSize=$(echo "$totalSize + $DB_SIZE" | bc)
     done
+
     echo "Total size of all databases: $totalSize MB"
     log "Total size of all databases: $totalSize MB"
 }
@@ -72,21 +72,21 @@ function free_space () {
     fi
 }
 
-function transfer_files_mails_dbs () {
+function transfer_files_mails_dbs() {
     # Extracting the list of domains from the remote server
-    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
+    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r '[.doc.elem[] | .name."$"] | join(" ")')
     echo ""
     echo "DOMAINS: $DOMAINS" | tr ' ' '\n'
 
     # Confirmation prompt
-#    echo ""
-#    read -p "Proceed with execution? (y/n) "  -r
-#    echo    # (optional) line break
-#    if [[ ! $REPLY =~ ^[Yy]$ ]]
-#    then
-#        # if the answer is not 'Y' or 'y', exit
-#        exit 1
-#    fi
+    # echo ""
+    # read -p "Proceed with execution? (y/n) " -r
+    # echo    # (optional) line break
+    # if [[ ! $REPLY =~ ^[Yy]$ ]]
+    # then
+    #     # if the answer is not 'Y' or 'y', exit
+    #     exit 1
+    # fi
 
     for DOMAIN in $DOMAINS; do
         echo "Working with domain: $DOMAIN"
@@ -97,47 +97,45 @@ function transfer_files_mails_dbs () {
         DESTINATION_DOMAIN=$DESTINATION
         rsync_from $SOURCE_DOMAIN $DESTINATION_DOMAIN
 
-            if [ $? -eq 0 ]; then
-                log "rsync_from completed successfully for domain $DOMAIN"
-
-            else
-                log "Error executing rsync_from for domain $DOMAIN"
-            fi
+        if [ $? -eq 0 ]; then
+            log "rsync_from completed successfully for domain $DOMAIN"
+        else
+            log "Error executing rsync_from for domain $DOMAIN"
+        fi
     done
 
     log "File transfer completed."
     echo ""
     echo "File transfer completed."
 
-           curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
-               \"channel\":\"$BOT_ID\",
-               \"attachments\": [
-                   {
-                       \"color\": \"#36a64f\",
-                       \"blocks\": [
-                           {
-                               \"type\": \"header\",
-                               \"text\": {
-                                   \"type\": \"plain_text\",
-                                   \"text\": \"Transfer FILES for $USER_CPANEL COMPLITED - $WORKER\",
-                                   \"emoji\": true
-                               }
-                           },
-                           {
-                               \"type\": \"divider\"
-                           },
-                           {
-                               \"type\": \"section\",
-                               \"text\": {
-                                   \"type\": \"mrkdwn\",
-                                   \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
-                               }
-                           },
-
-                       ]
-                   }
-               ]
-           }" https://slack.com/api/chat.postMessage
+    curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
+        \"channel\":\"$BOT_ID\",
+        \"attachments\": [
+            {
+                \"color\": \"#36a64f\",
+                \"blocks\": [
+                    {
+                        \"type\": \"header\",
+                        \"text\": {
+                            \"type\": \"plain_text\",
+                            \"text\": \"Transfer FILES for $USER_CPANEL COMPLETED - $WORKER\",
+                            \"emoji\": true
+                        }
+                    },
+                    {
+                        \"type\": \"divider\"
+                    },
+                    {
+                        \"type\": \"section\",
+                        \"text\": {
+                            \"type\": \"mrkdwn\",
+                            \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
+                        }
+                    }
+                ]
+            }
+        ]
+    }" https://slack.com/api/chat.postMessage
 }
 
 function rsync_email () {
@@ -156,80 +154,77 @@ function rsync_email () {
     fi
 }
 
-function rsync_db () {
+function rsync_db() {
     local source=$1
     local destination=$2
 
     # Передача архива на локальный сервер
     rsync -azh --info=progress2 -e "ssh -i ~/.ssh/id_rsa" $USER_ISP@$IP_REMOTE_SERVER:$source $destination
-        if [ $? -eq 0 ]; then
-          log "Transfer DB was competed."
 
-          curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
-              \"channel\":\"$BOT_ID\",
-              \"attachments\": [
-                  {
-                      \"color\": \"#36a64f\",
-                      \"blocks\": [
-                          {
-                              \"type\": \"header\",
-                              \"text\": {
-                                  \"type\": \"plain_text\",
-                                  \"text\": \"Transfer DATABASE dumps for $USER_CPANEL SUCCESSFULL - $WORKER\",
-                                  \"emoji\": true
-                              }
-                          },
-                          {
-                              \"type\": \"divider\"
-                          },
-                          {
-                              \"type\": \"section\",
-                              \"text\": {
-                                  \"type\": \"mrkdwn\",
-                                  \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
-                              }
-                          },
+    if [ $? -eq 0 ]; then
+        log "Transfer DB was completed."
 
-                      ]
-                  }
-              ]
-          }" https://slack.com/api/chat.postMessage
+        curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
+            \"channel\":\"$BOT_ID\",
+            \"attachments\": [
+                {
+                    \"color\": \"#36a64f\",
+                    \"blocks\": [
+                        {
+                            \"type\": \"header\",
+                            \"text\": {
+                                \"type\": \"plain_text\",
+                                \"text\": \"Transfer DATABASE dumps for $USER_CPANEL SUCCESSFULL - $WORKER\",
+                                \"emoji\": true
+                            }
+                        },
+                        {
+                            \"type\": \"divider\"
+                        },
+                        {
+                            \"type\": \"section\",
+                            \"text\": {
+                                \"type\": \"mrkdwn\",
+                                \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
+                            }
+                        },
+                    ]
+                }
+            ]
+        }" https://slack.com/api/chat.postMessage
 
-        else
+    else
+        log "Transfer DB was error."
 
-          log "Transfer DB was error."
-
-          curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
-              \"channel\":\"$BOT_ID\",
-              \"attachments\": [
-                  {
-                      \"color\": \"#ff0000\",
-                      \"blocks\": [
-                          {
-                              \"type\": \"header\",
-                              \"text\": {
-                                  \"type\": \"plain_text\",
-                                  \"text\": \"Transfer DATABASE dumps for $USER_CPANEL FAILED - $WORKER\",
-                                  \"emoji\": true
-                              }
-                          },
-                          {
-                              \"type\": \"divider\"
-                          },
-                          {
-                              \"type\": \"section\",
-                              \"text\": {
-                                  \"type\": \"mrkdwn\",
-                                  \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
-                              }
-                          }
-                      ]
-                  }
-              ]
-          }" https://slack.com/api/chat.postMessage
-
-
-        fi
+        curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
+            \"channel\":\"$BOT_ID\",
+            \"attachments\": [
+                {
+                    \"color\": \"#ff0000\",
+                    \"blocks\": [
+                        {
+                            \"type\": \"header\",
+                            \"text\": {
+                                \"type\": \"plain_text\",
+                                \"text\": \"Transfer DATABASE dumps for $USER_CPANEL FAILED - $WORKER\",
+                                \"emoji\": true
+                            }
+                        },
+                        {
+                            \"type\": \"divider\"
+                        },
+                        {
+                            \"type\": \"section\",
+                            \"text\": {
+                                \"type\": \"mrkdwn\",
+                                \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }" https://slack.com/api/chat.postMessage
+    fi
 }
 
 function transfer_cron () {
@@ -263,8 +258,7 @@ function transfer_cron () {
     fi
 }
 
-function upload_cron () {
-
+function upload_cron() {
     # Path to your file
     file_path="crontab.txt"
 
@@ -277,8 +271,8 @@ function upload_cron () {
 
     # Check for the string "No cron tasks found" in the file
     if grep -q "No cron tasks found" "$file_path"; then
-        echo "There are no cron tasks in the file $file_path'. Task import is skipped."
-        log "There are no cron tasks in the file $file_path'. Task import is skipped."
+        echo "There are no cron tasks in the file $file_path. Task import is skipped."
+        log "There are no cron tasks in the file $file_path. Task import is skipped."
         return
     fi
 
@@ -291,8 +285,7 @@ function upload_cron () {
     fi
 
     # Read the file and add each line to crontab
-    while IFS= read -r line
-    do
+    while IFS= read -r line; do
         # Replace /usr/bin/php with /opt/alt/php74/usr/bin/php and /var/www/$USER_ISP/data with /home/$USER_CPANEL in the line
         line=$(echo "$line" | sed -e 's|/usr/bin/php|/opt/alt/php74/usr/bin/php|' -e "s|/var/www/$USER_ISP/data|/home/$USER_CPANEL|")
 

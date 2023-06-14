@@ -1,25 +1,23 @@
-function create_domain () {
+function create_domain() {
+  #SUB_DOMAIN=$(uapi --output=jsonpretty DomainInfo list_domains | jq -r '.result.data.main_domain')
+    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r '[.doc.elem[] | .name."$"] | join(" ")')
 
-    #SUB_DOMAIN=$(uapi --output=jsonpretty DomainInfo list_domains | jq -r '.result.data.main_domain')
+    for DOMAIN in $DOMAINS; do
+        RESPONSE=$(curl -k -s -H "Authorization: Basic $(echo -n "${USER_CPANEL}:${PASS_CPANEL}" | base64)" -d "cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=addaddondomain&subdomain=${DOMAIN}&newdomain=${DOMAIN}&ftp_is_optional=1&dir=${DOMAIN}" "https://${HOST_CPANEL}:2083/json-api/cpanel")
 
-    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
+        RESULT=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].result')
 
-    for DOMAIN in $DOMAINS
-    do
-      RESPONSE=$(curl -k -s -H "Authorization: Basic $(echo -n "${USER_CPANEL}:${PASS_CPANEL}" | base64)" -d "cpanel_jsonapi_apiversion=2&cpanel_jsonapi_module=AddonDomain&cpanel_jsonapi_func=addaddondomain&subdomain=${DOMAIN}&newdomain=${DOMAIN}&ftp_is_optional=1&dir=${DOMAIN}" "https://${HOST_CPANEL}:2083/json-api/cpanel")
-
-      RESULT=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].result')
-
-      if [ "$RESULT" -eq 1 ]; then
-        echo "$DOMAIN: SUCCESS" >> created_domains.txt
-        log "$DOMAIN: SUCCESS"
-      else
-        REASON=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].reason')
-        echo "$DOMAIN: FAILED, Reason: $REASON" >> created_domains.txt
-        log "$DOMAIN: FAILED, Reason: $REASON"
-      fi
+        if [ "$RESULT" -eq 1 ]; then
+            echo "$DOMAIN: SUCCESS" >> created_domains.txt
+            log "$DOMAIN: SUCCESS"
+        else
+            REASON=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].reason')
+            echo "$DOMAIN: FAILED, Reason: $REASON" >> created_domains.txt
+            log "$DOMAIN: FAILED, Reason: $REASON"
+        fi
     done
-        curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
+
+    curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
         \"channel\":\"$BOT_ID\",
         \"attachments\": [
             {
@@ -47,7 +45,6 @@ function create_domain () {
             }
         ]
     }" https://slack.com/api/chat.postMessage
-
 }
 
 function delete_domain () {

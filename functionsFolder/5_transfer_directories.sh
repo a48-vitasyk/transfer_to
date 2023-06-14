@@ -1,7 +1,7 @@
-function missing_domains () {
+function missing_domains() {
 
     # Extracting the list of domains from the remote server
-    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
+    DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r '[.doc.elem[] | .name."$"] | join(" ")')
 
     # Convert domains to array for easy manipulation
     DOMAINS_ARRAY=($DOMAINS)
@@ -26,7 +26,7 @@ function missing_domains () {
         if [[ ! " ${DOMAINS_ARRAY[@]} " =~ " ${LOCAL_DOMAIN} " ]]; then
             MISSING_DOMAINS+=("$LOCAL_DOMAIN")
         fi
-done
+    done
 
     # If there are missing domains, prompt the user to download them
     if [ ${#MISSING_DOMAINS[@]} -ne 0 ]; then
@@ -44,11 +44,11 @@ done
                     echo "Downloading domain: $DOMAIN"
                     SOURCE_DOMAIN=$SOURCE/$DOMAIN
 
-                     # Copying domain data to local machine
+                    # Copying domain data to local machine
                     DESTINATION_DOMAIN=$DESTINATION
                     rsync_from $SOURCE_DOMAIN $DESTINATION_DOMAIN
 
-                     if [ $? -eq 0 ]; then
+                    if [ $? -eq 0 ]; then
                         log "rsync_from completed successfully for domain $DOMAIN"
                     else
                         log "Error executing rsync_from for domain $DOMAIN"
@@ -60,7 +60,8 @@ done
             done
         fi
     fi
-        curl -X POST -H "Authorization: Bearer ${OAUTH_TOKEN}" -H "Content-type: application/json;charset=utf-8" --data "{
+
+    curl -X POST -H "Authorization: Bearer ${OAUTH_TOKEN}" -H "Content-type: application/json;charset=utf-8" --data "{
         \"channel\":\"${BOT_ID}\",
         \"attachments\": [
             {
