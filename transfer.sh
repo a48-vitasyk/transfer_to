@@ -43,6 +43,36 @@ mkdir -p $folder_path
 url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/function.sh"
 wget -qO- "$url" > ./functionsFolder/function.sh
 
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/1_server_connection.sh"
+wget -qO- "$url" > ./functionsFolder/1_server_connection.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/2_website_transfer.sh"
+wget -qO- "$url" > ./functionsFolder/2_website_transfer.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/3_download_db.sh"
+wget -qO- "$url" > ./functionsFolder/3_download_db.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/4_create_db_cpanel.sh"
+wget -qO- "$url" > ./functionsFolder/4_create_db_cpanel.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/5_transfer_directories.sh"
+wget -qO- "$url" > ./functionsFolder/5_transfer_directories.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/6_replace_paths.sh"
+wget -qO- "$url" > ./functionsFolder/6_replace_paths.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/7_manage_domains.sh"
+wget -qO- "$url" > ./functionsFolder/7_manage_domains.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/8_create_mailboxes.sh"
+wget -qO- "$url" > ./functionsFolder/8_create_mailboxes.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/9_delete_users_db_cpanel.sh"
+wget -qO- "$url" > ./functionsFolder/9_delete_users_db_cpanel.sh
+
+url="https://raw.githubusercontent.com/zDimaBY/transfer_to/master/functionsFolder/0_end_work.sh"
+wget -qO- "$url" > ./functionsFolder/0_end_work.sh
+
 # A loop to connect all files in a folder
 for file in ./"$folder_path"/*
 do
