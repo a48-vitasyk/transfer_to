@@ -98,7 +98,7 @@ function rsync_from () {
     log "Transfer complete. Data was transferred to the following $destination."
 }
 
-
+# Function controller -------------------------------------------------------------------------
 function establish_server_connection() {
     clear
     read -p "Establish server connection? (y/n) " response
