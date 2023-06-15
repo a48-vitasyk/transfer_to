@@ -1,10 +1,9 @@
-function create_mailbox () {
+function create_mailbox() {
     # Get a list of all emails
     emails=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=email" | jq -r '.doc.elem[] | .name."$"')
 
     # Go through each email
-    for email in "${emails[@]}"
-    do
+    for email in "${emails[@]}"; do
         # Make a request to get this email's password
         password_json=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=email.edit&tconvert=punycode&elname=$email&elid=$email")
 
@@ -29,69 +28,67 @@ function create_mailbox () {
             echo "$email : $password" >> email_info.txt
             echo "Mailbox $username successfully created for domain $domain"
             log "Mailbox $username successfully created for domain $domain"
-
         else
             echo "Mailbox $username cannot be created without corresponding domain $domain" >> email_info.txt
             log "Mailbox $username cannot be created without corresponding domain $domain"
 
-              curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
-                  \"channel\":\"$BOT_ID\",
-                  \"attachments\": [
-                      {
-                          \"color\": \"#ff0000\",
-                          \"blocks\": [
-                              {
-                                  \"type\": \"header\",
-                                  \"text\": {
-                                      \"type\": \"plain_text\",
-                                      \"text\": \"Mailbox $username created FAILD - Add corresponding domain - $WORKER\",
-                                      \"emoji\": true
-                                  }
-                              },
-                              {
-                                  \"type\": \"divider\"
-                              },
-                              {
-                                  \"type\": \"section\",
-                                  \"text\": {
-                                      \"type\": \"mrkdwn\",
-                                      \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
-                                  }
-                              }
-                          ]
-                      }
-                  ]
-              }" https://slack.com/api/chat.postMessage
-
+            curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
+                \"channel\":\"$BOT_ID\",
+                \"attachments\": [
+                    {
+                        \"color\": \"#ff0000\",
+                        \"blocks\": [
+                            {
+                                \"type\": \"header\",
+                                \"text\": {
+                                    \"type\": \"plain_text\",
+                                    \"text\": \"Mailbox $username created FAILD - Add corresponding domain - $WORKER\",
+                                    \"emoji\": true
+                                }
+                            },
+                            {
+                                \"type\": \"divider\"
+                            },
+                            {
+                                \"type\": \"section\",
+                                \"text\": {
+                                    \"type\": \"mrkdwn\",
+                                    \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }" https://slack.com/api/chat.postMessage
         fi
     done
-     curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
-                  \"channel\":\"$BOT_ID\",
-                  \"attachments\": [
-                      {
-                          \"color\": \"#36a64f\",
-                          \"blocks\": [
-                              {
-                                  \"type\": \"header\",
-                                  \"text\": {
-                                      \"type\": \"plain_text\",
-                                      \"text\": \"Create MailBox for $USER_CPANEL COMPLITED - $WORKER\",
-                                      \"emoji\": true
-                                  }
-                              },
-                              {
-                                  \"type\": \"divider\"
-                              },
-                              {
-                                  \"type\": \"section\",
-                                  \"text\": {
-                                      \"type\": \"mrkdwn\",
-                                      \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
-                                  }
-                              },
 
-                          ]
-                      }
-                  ]
-              }" https://slack.com/api/chat.postMessage
+    curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
+        \"channel\":\"$BOT_ID\",
+        \"attachments\": [
+            {
+                \"color\": \"#36a64f\",
+                \"blocks\": [
+                    {
+                        \"type\": \"header\",
+                        \"text\": {
+                            \"type\": \"plain_text\",
+                            \"text\": \"Create MailBox for $USER_CPANEL COMPLITED - $WORKER\",
+                            \"emoji\": true
+                        }
+                    },
+                    {
+                        \"type\": \"divider\"
+                    },
+                    {
+                        \"type\": \"section\",
+                        \"text\": {
+                            \"type\": \"mrkdwn\",
+                            \"text\": \"<https://api.zomro.com/billmgr?/|Ticket #: $TICKET>\"
+                        }
+                    },
+                ]
+            }
+        ]
+    }" https://slack.com/api/chat.postMessage
 }

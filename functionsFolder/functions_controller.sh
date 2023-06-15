@@ -1,6 +1,6 @@
-function log () {
+function log() {
     local message=$1
-    echo "$(date): $message" >> $LOGFILE
+    echo "$(date): $message" >>$LOGFILE
 }
 
 function scrap-db() {
@@ -50,7 +50,7 @@ function scrap-db() {
             fi
 
             # Write the information about the database, the user, the password and the dump file
-            echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> db_info.txt
+            echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >>db_info.txt
             log "${DB_USER}_${DB}_dump.sql wrote >> db_info.txt"
         done
     done

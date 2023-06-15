@@ -100,7 +100,7 @@ function process_transfer() {
             9) delete_all_users_and_db ;;
             0)
                 echo ""
-                funExit
+                fun_exit
                 exit 0
                 ;;
             *)
