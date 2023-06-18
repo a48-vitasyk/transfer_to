@@ -172,6 +172,9 @@ function scrap-db-local () {
             # Check if dump was successful
             if [ $? -ne 0 ]; then
                 # If not, try without specifying host and port
+                echo ""
+                echo "Error to created dump with host and port. Trying without specifying host and port"
+                echo ""
                 sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
             fi
 
@@ -538,8 +541,16 @@ function rsync_db () {
 function transfer_files_mails_dbs () {
     # Extracting the list of domains from the remote server
     DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
+
+    for DOMAIN in $DOMAINS; do
+        PHP_VERSION=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_version."$"')
+        PHP_MODE=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_mode."$"')
+        echo "$DOMAIN $PHP_VERSION 'Режим работы PHP - $PHP_MODE'" >> domain_info.txt
+    done
+
     echo ""
     echo "DOMAINS: $DOMAINS" | tr ' ' '\n'
+    sleep 5
 
     # Confirmation prompt
 #    echo ""
@@ -990,6 +1001,9 @@ function create_domain () {
     #SUB_DOMAIN=$(uapi --output=jsonpretty DomainInfo list_domains | jq -r '.result.data.main_domain')
 
     DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
+
+             curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r '[.doc.elem[] | {name: .name."$", php_version: .php_version."$"}] | .[] | "\(.name) \(.php_version)"' >> domain_info.txt
+
 
     for DOMAIN in $DOMAINS
     do
