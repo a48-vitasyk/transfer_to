@@ -87,6 +87,9 @@ function scrap-db () {
             # Check if dump was successful
             if [ $? -ne 0 ]; then
                 # If not, try without specifying host and port
+                echo ""
+                echo "Error to created dump with host and port. Trying without specifying host and port"
+                echo ""
                 sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
             fi
 
@@ -123,7 +126,7 @@ function scrap-db () {
                                ]
                            }
                        ]
-                   }" https://slack.com/api/chat.postMessage
+                   }" https://slack.com/api/chat.postMessage > /dev/null
 }
 
 
@@ -205,7 +208,7 @@ function scrap-db-local () {
                            ]
                        }
                    ]
-               }" https://slack.com/api/chat.postMessage
+               }" https://slack.com/api/chat.postMessage > /dev/null
 }
 
 
@@ -393,7 +396,7 @@ function id_rsa_key () {
                           ]
                       }
                   ]
-              }" https://slack.com/api/chat.postMessage
+              }" https://slack.com/api/chat.postMessage > /dev/null
         else
           log "Error transferring SSH key to the server."
           curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
@@ -420,7 +423,7 @@ function id_rsa_key () {
                       ]
                   }
               ]
-          }" https://slack.com/api/chat.postMessage
+          }" https://slack.com/api/chat.postMessage > /dev/null
         fi
 }
 
@@ -490,7 +493,7 @@ function rsync_db () {
                       ]
                   }
               ]
-          }" https://slack.com/api/chat.postMessage
+          }" https://slack.com/api/chat.postMessage > /dev/null
 
         else
 
@@ -523,7 +526,7 @@ function rsync_db () {
                       ]
                   }
               ]
-          }" https://slack.com/api/chat.postMessage
+          }" https://slack.com/api/chat.postMessage > /dev/null
 
 
         fi
@@ -597,7 +600,7 @@ function transfer_files_mails_dbs () {
                        ]
                    }
                ]
-           }" https://slack.com/api/chat.postMessage
+           }" https://slack.com/api/chat.postMessage > /dev/null
 }
 
 
@@ -691,7 +694,7 @@ done
                 ]
             }
         ]
-    }" https://slack.com/api/chat.postMessage
+    }" https://slack.com/api/chat.postMessage > /dev/null
 }
 
 
@@ -787,7 +790,7 @@ function create_db_on_cpanel () {
                 ]
             }
         ]
-    }" https://slack.com/api/chat.postMessage
+    }" https://slack.com/api/chat.postMessage > /dev/null
 
 }
 
@@ -862,7 +865,7 @@ function upload_dump_on_cpanel () {
                       ]
                   }
               ]
-          }" https://slack.com/api/chat.postMessage
+          }" https://slack.com/api/chat.postMessage > /dev/null
 
 }
 
@@ -927,7 +930,7 @@ function delete_all_db_user_cpanel () {
                       ]
                   }
               ]
-          }" https://slack.com/api/chat.postMessage
+          }" https://slack.com/api/chat.postMessage > /dev/null
 
 
         else
@@ -975,7 +978,7 @@ function delete_all_db_user_cpanel () {
                       ]
                   }
               ]
-          }" https://slack.com/api/chat.postMessage
+          }" https://slack.com/api/chat.postMessage > /dev/null
 
         else
           echo "User deletion operation aborted."
@@ -1030,7 +1033,7 @@ function create_domain () {
                 ]
             }
         ]
-    }" https://slack.com/api/chat.postMessage
+    }" https://slack.com/api/chat.postMessage > /dev/null
 
 }
 
@@ -1123,7 +1126,7 @@ function create_mailbox () {
                           ]
                       }
                   ]
-              }" https://slack.com/api/chat.postMessage
+              }" https://slack.com/api/chat.postMessage > /dev/null
 
         fi
     done
@@ -1155,7 +1158,7 @@ function create_mailbox () {
                           ]
                       }
                   ]
-              }" https://slack.com/api/chat.postMessage
+              }" https://slack.com/api/chat.postMessage > /dev/null
 }
 
 
@@ -1171,7 +1174,7 @@ function process_transfer () {
     echo ""
     echo "1. Establish server connection"
     echo "2. Start website transfer"
-    echo "3. Forcefully download DB to local server"
+    echo "3. Create DB dups to cPanel/ISP"
     echo "4. Create DB and upload dumps in cPanel"
     echo "5. Transfer missing directories"
     echo "6. Replace PATHs in configs"
@@ -1251,15 +1254,35 @@ function process_transfer () {
             ;;
         3)
             clear
-            read -p "Forcefully download DB to local server? (y/n)" RESPONSE
-            if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
-                scrap-db-local
-                echo "Databases successful dumped locally."
-            else
-                echo "Databases dumped locally - Action canceled."
-            fi
-            clear
-            ;;
+            echo "1. Create DB dumps to cPanel"
+            echo "2. Create DB dumps to ISP Manager"
+            read -p "Choose an action (1/2) " RESPONSE
+
+            case $RESPONSE in
+              1)
+                read -p "Create DB dumps to cPanel? (y/n) " RESPONSE
+                if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
+                    scrap-db-local
+                    echo "Databases successful dumped to cPanel."
+                else
+                    echo "Databases dumped to cPanel - Action canceled."
+                fi
+                ;;
+              2)
+                read -p "Create DB dumps to ISP Manager? (y/n) " RESPONSE
+                if [ "$RESPONSE" = "y" ] || [ "$RESPONSE" = "Y" ]; then
+                    scrap-db
+                    echo ""
+                    echo "Databases successful dumped to ISP Manager."
+                else
+                    echo "Databases dumped to ISP Manager - Action canceled."
+                fi
+                ;;
+              *)
+                echo "Invalid option"
+                ;;
+            esac
+                ;;
         4)
             clear
             read -p "Databases will be created and corresponding dumps will be uploaded into them. Continue? (y/n) " RESPONSE
