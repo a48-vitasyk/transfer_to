@@ -542,10 +542,22 @@ function transfer_files_mails_dbs () {
     # Extracting the list of domains from the remote server
     DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
 
+    # PHP version for domain
     for DOMAIN in $DOMAINS; do
         PHP_VERSION=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_version."$"')
         PHP_MODE=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_mode."$"')
         echo "$DOMAIN $PHP_VERSION 'PHP operation mode - $PHP_MODE'" >> domain_info.txt
+    done
+
+    # Redirect for domain
+    for DOMAIN in $DOMAINS; do
+        REDIRECT_INFO=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain.redirect&elid=$DOMAIN&elname=$DOMAIN")
+        # Check redirect each domain
+        if echo $REDIRECT_INFO | jq -e .doc.elem[] > /dev/null 2>&1; then
+            echo $DOMAIN "redirect to" $(echo $REDIRECT_INFO | jq -r '.doc.elem[] | .url."$"') >> redirect_domains.txt
+        else
+            echo $DOMAIN "does not have any redirects" >> redirect_domains.txt
+        fi
     done
 
     echo ""
