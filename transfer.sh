@@ -545,7 +545,7 @@ function transfer_files_mails_dbs () {
     for DOMAIN in $DOMAINS; do
         PHP_VERSION=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_version."$"')
         PHP_MODE=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_mode."$"')
-        echo "$DOMAIN $PHP_VERSION 'Режим работы PHP - $PHP_MODE'" >> domain_info.txt
+        echo "$DOMAIN $PHP_VERSION 'PHP operation mode - $PHP_MODE'" >> domain_info.txt
     done
 
     echo ""
