@@ -708,6 +708,52 @@ done
     }" https://slack.com/api/chat.postMessage > /dev/null
 }
 
+function php_modules () {
+
+    # Получить список версий PHP
+    versions=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=phpversions" | jq -r '.doc.elem[] | .name."$"')
+
+    # Очистить файл php_info.txt
+    echo "" > php_modules_ISP.txt
+
+    # Для каждой версии PHP...
+    for version in $versions
+    do
+        # Удаляем лишние пробелы и скобки
+        version=$(echo $version | sed -e 's/(alt)//' -e 's/ //g')
+
+        echo "PHP Version: $version" >> php_modules_ISP.txt
+
+        # Получить информацию о модулях для этой версии PHP
+        modules=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=phpextensions&elid=$version&elname=$version" | jq -r '.doc.elem[]? | "\(.name."$") - \(.enabled."$")"')
+
+        # Удалить модули с " - off" и убрать " - on" из названий модулей
+        modules=$(echo "$modules" | grep " - on" | sed 's/ - on//g')
+
+        # Добавить информацию о модулях в файл
+        echo "$modules" >> php_modules_ISP.txt
+        echo "" >> php_modules_ISP.txt
+    done
+
+#=======================================
+
+    # Задаем список нужных версий cPanel
+    filtered_versions=("52" "53" "54" "55" "56" "70" "71" "72" "73" "74" "80" "81" "82")
+
+    # Подготавливаем файл для записи
+    echo "" > php_modules_cpanel.txt
+
+    # Исполняем команду для каждой версии
+    for version in "${filtered_versions[@]}"; do
+      echo "PHP$version" >> php_modules_cpanel.txt
+      /opt/alt/php${version}/usr/bin/php -m | grep -P "^[a-zA-Z]" >> php_modules_cpanel.txt
+      echo "" >> php_modules_cpanel.txt
+    done
+
+}
+
+
+
 
 function create_db_on_cpanel () {
     # Get a list of all databases
@@ -1222,7 +1268,7 @@ function process_transfer () {
 
         #  ================= Site files transfer ==========================
 
-                transfer_files_mails_dbs
+                transfer_files_mails_dbs ; php_modules
 
         #  ================= Copying mail directory ===================
 
