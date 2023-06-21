@@ -560,6 +560,25 @@ function transfer_files_mails_dbs () {
         fi
     done
 
+    # Check aliases
+    for DOMAIN in $DOMAINS
+    do
+      ALIASES=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain.edit&elid=$DOMAIN&elname=$DOMAIN" | jq -r '.doc.aliases."$"')
+      echo "$DOMAIN => $ALIASES" >> aliase_domains.txt
+    done
+
+    # Check FTP users
+    FTP_USERS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=ftp.user" | jq -r '.doc.elem[] | .name."$"')
+
+    for FTP_USER in $FTP_USERS
+    do
+      USER_INFO=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=ftp.user.edit&elid=$FTP_USER&elname=$FTP_USER")
+      PASSWORD=$(echo "$USER_INFO" | jq -r '.doc.password."$"')
+      HOME=$(echo "$USER_INFO" | jq -r '.doc.home."$"')
+      echo "$FTP_USER => Password: $PASSWORD, Home Directory: $HOME" >> ftp_users.txt
+    done
+
+
     echo ""
     echo "DOMAINS: $DOMAINS" | tr ' ' '\n'
     sleep 5
