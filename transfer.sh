@@ -542,6 +542,9 @@ function transfer_files_mails_dbs () {
     # Extracting the list of domains from the remote server
     DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
 
+    echo ""
+    echo "Checking PHP version for domains"
+    echo ""
     # PHP version for domain
     for DOMAIN in $DOMAINS; do
         PHP_VERSION=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_version."$"')
@@ -549,6 +552,10 @@ function transfer_files_mails_dbs () {
         echo "$DOMAIN $PHP_VERSION 'PHP operation mode - $PHP_MODE'" >> domain_info.txt
     done
 
+    sleep 3
+    echo ""
+    echo "Checking redirect for domains"
+    echo ""
     # Redirect for domain
     for DOMAIN in $DOMAINS; do
         REDIRECT_INFO=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain.redirect&elid=$DOMAIN&elname=$DOMAIN")
@@ -560,12 +567,22 @@ function transfer_files_mails_dbs () {
         fi
     done
 
+    sleep 3
+    echo ""
+    echo "Checking aliase for domains"
+    echo ""
+
     # Check aliases
     for DOMAIN in $DOMAINS
     do
       ALIASES=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain.edit&elid=$DOMAIN&elname=$DOMAIN" | jq -r '.doc.aliases."$"')
       echo "$DOMAIN => $ALIASES" >> aliase_domains.txt
     done
+
+    sleep 3
+    echo ""
+    echo "Checking FTP users"
+    echo ""
 
     # Check FTP users
     FTP_USERS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=ftp.user" | jq -r '.doc.elem[] | .name."$"')
@@ -581,7 +598,7 @@ function transfer_files_mails_dbs () {
 
     echo ""
     echo "DOMAINS: $DOMAINS" | tr ' ' '\n'
-    sleep 5
+    sleep 3
 
     # Confirmation prompt
 #    echo ""
