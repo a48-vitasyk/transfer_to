@@ -82,7 +82,7 @@ function scrap-db () {
             sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mkdir -p $REMOTE_DIR"
 
             # Dump the database on the remote server
-            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h 127.0.0.1 --port $DB_PORT -u$DB_USER -p$DB_PASS $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
+            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h 127.0.0.1 --port $DB_PORT -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
 
             # Check if dump was successful
             if [ $? -ne 0 ]; then
@@ -90,7 +90,7 @@ function scrap-db () {
                 echo ""
                 echo "Error to created dump with host and port. Trying without specifying host and port"
                 echo ""
-                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
+                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
             fi
 
             # Write the information about the database, the user, the password and the dump file
@@ -167,7 +167,7 @@ function scrap-db-local () {
             LOCAL_DIR="$DESTINATION"
 
             # Dump the database on the remote server and save it on the local server
-            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h 127.0.0.1 --port $DB_PORT -u$DB_USER -p$DB_PASS $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
+            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h 127.0.0.1 --port $DB_PORT -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
 
             # Check if dump was successful
             if [ $? -ne 0 ]; then
@@ -175,7 +175,7 @@ function scrap-db-local () {
                 echo ""
                 echo "Error to created dump with host and port. Trying without specifying host and port"
                 echo ""
-                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
+                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
             fi
 
             # Write the information about the database, the user, the password and the dump file
