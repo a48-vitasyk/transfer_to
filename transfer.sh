@@ -94,7 +94,7 @@ function scrap-db () {
             fi
 
             # Write the information about the database, the user, the password and the dump file
-            echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> db_info.txt
+            echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> transfer_db_info.txt
             log "${DB_USER}_${DB}_dump.sql  wrote  >> db_info.txt"
         done
     done
@@ -179,7 +179,7 @@ function scrap-db-local () {
             fi
 
             # Write the information about the database, the user, the password and the dump file
-            echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> db_info.txt
+            echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> transfer_db_info.txt
             log "${DB_USER}_${DB}_dump.sql  wrote  >> db_info.txt"
         done
     done
@@ -311,16 +311,16 @@ function transfer_cron () {
             month=$(echo "$interval" | cut -d ' ' -f 4)
             day_of_week=$(echo "$interval" | cut -d ' ' -f 5)
 
-            echo "$minute $hour $day_of_month $month $day_of_week $command" >> crontab.txt
+            echo "$minute $hour $day_of_month $month $day_of_week $command" >> transfer_crontab.txt
         done
 
         echo ""
-        echo "Tasks have been added to the crontab.txt file"
+        echo "Tasks have been added to the transfer_crontab.txt file"
         echo ""
 
     else
-        # "If 'doc.elem' is empty, write the message "No cron tasks found" to 'crontab.txt'"
-        echo "No cron tasks found" > crontab.txt
+        # "If 'doc.elem' is empty, write the message "No cron tasks found" to 'transfer_crontab.txt'"
+        echo "No cron tasks found" > transfer_crontab.txt
     fi
 }
 
@@ -328,7 +328,7 @@ function transfer_cron () {
 function upload_cron () {
 
     # Path to your file
-    file_path="crontab.txt"
+    file_path="transfer_crontab.txt"
 
     # File existence check
     if [ ! -f "$file_path" ]; then
@@ -549,7 +549,7 @@ function transfer_files_mails_dbs () {
     for DOMAIN in $DOMAINS; do
         PHP_VERSION=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_version."$"')
         PHP_MODE=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r --arg DOMAIN "$DOMAIN" '.doc.elem[] | select(.name."$" == $DOMAIN) | .php_mode."$"')
-        echo "$DOMAIN $PHP_VERSION 'PHP operation mode - $PHP_MODE'" >> domain_info.txt
+        echo "$DOMAIN $PHP_VERSION 'PHP operation mode - $PHP_MODE'" >> transfer_domain_info.txt
     done
 
     sleep 3
@@ -561,9 +561,9 @@ function transfer_files_mails_dbs () {
         REDIRECT_INFO=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain.redirect&elid=$DOMAIN&elname=$DOMAIN")
         # Check redirect each domain
         if echo $REDIRECT_INFO | jq -e .doc.elem[] > /dev/null 2>&1; then
-            echo $DOMAIN "redirect to" $(echo $REDIRECT_INFO | jq -r '.doc.elem[] | .url."$"') >> redirect_domains.txt
+            echo $DOMAIN "redirect to" $(echo $REDIRECT_INFO | jq -r '.doc.elem[] | .url."$"') >> transfer_domains_redirect.txt
         else
-            echo $DOMAIN "does not have any redirects" >> redirect_domains.txt
+            echo $DOMAIN "does not have any redirects" >> transfer_domains_redirect.txt
         fi
     done
 
@@ -576,7 +576,7 @@ function transfer_files_mails_dbs () {
     for DOMAIN in $DOMAINS
     do
       ALIASES=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain.edit&elid=$DOMAIN&elname=$DOMAIN" | jq -r '.doc.aliases."$"')
-      echo "$DOMAIN => $ALIASES" >> aliase_domains.txt
+      echo "$DOMAIN => $ALIASES" >> transfer_domains_aliase.txt
     done
 
     sleep 3
@@ -592,7 +592,7 @@ function transfer_files_mails_dbs () {
       USER_INFO=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=ftp.user.edit&elid=$FTP_USER&elname=$FTP_USER")
       PASSWORD=$(echo "$USER_INFO" | jq -r '.doc.password."$"')
       HOME=$(echo "$USER_INFO" | jq -r '.doc.home."$"')
-      echo "$FTP_USER => Password: $PASSWORD, Home Directory: $HOME" >> ftp_users.txt
+      echo "$FTP_USER => Password: $PASSWORD, Home Directory: $HOME" >> transfer_ftp_users.txt
     done
 
 
@@ -761,8 +761,8 @@ function php_modules () {
     # Получить список версий PHP
     versions=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=phpversions" | jq -r '.doc.elem[] | .name."$"')
 
-    # Очистить файл php_info.txt
-    echo "" > php_modules_ISP.txt
+    # Очистить файл transfer_php_info.txt
+    echo "" > transfer_php_modules_ISP.txt
 
     # Для каждой версии PHP...
     for version in $versions
@@ -770,7 +770,7 @@ function php_modules () {
         # Удаляем лишние пробелы и скобки
         version=$(echo $version | sed -e 's/(alt)//' -e 's/ //g')
 
-        echo "PHP Version: $version" >> php_modules_ISP.txt
+        echo "PHP Version: $version" >> transfer_php_modules_ISP.txt
 
         # Получить информацию о модулях для этой версии PHP
         modules=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=phpextensions&elid=$version&elname=$version" | jq -r '.doc.elem[]? | "\(.name."$") - \(.enabled."$")"')
@@ -779,8 +779,8 @@ function php_modules () {
         modules=$(echo "$modules" | grep " - on" | sed 's/ - on//g')
 
         # Добавить информацию о модулях в файл
-        echo "$modules" >> php_modules_ISP.txt
-        echo "" >> php_modules_ISP.txt
+        echo "$modules" >> transfer_php_modules_ISP.txt
+        echo "" >> transfer_php_modules_ISP.txt
     done
 
 #=======================================
@@ -789,13 +789,13 @@ function php_modules () {
     filtered_versions=("52" "53" "54" "55" "56" "70" "71" "72" "73" "74" "80" "81" "82")
 
     # Подготавливаем файл для записи
-    echo "" > php_modules_cpanel.txt
+    echo "" > transfer_php_modules_cpanel.txt
 
     # Исполняем команду для каждой версии
     for version in "${filtered_versions[@]}"; do
-      echo "PHP$version" >> php_modules_cpanel.txt
-      /opt/alt/php${version}/usr/bin/php -m | grep -P "^[a-zA-Z]" >> php_modules_cpanel.txt
-      echo "" >> php_modules_cpanel.txt
+      echo "PHP$version" >> transfer_php_modules_cpanel.txt
+      /opt/alt/php${version}/usr/bin/php -m | grep -P "^[a-zA-Z]" >> transfer_php_modules_cpanel.txt
+      echo "" >> transfer_php_modules_cpanel.txt
     done
 
 }
@@ -983,7 +983,7 @@ function replace_config_urls () {
       if grep -q "/var/www/$USER_ISP/data/www/" "$file"; then
         echo "Осуществляется замена в файле: $file"
         awk '{original = $0; change = gsub("'"\/var\/www\/$USER_ISP\/data\/www\/"'", "'"\/home\/$USER_CPANEL\/"'")}
-             change {print "Замена в файле: " FILENAME "\nСтрока: " NR "\nСтарая строка: " original "\nНовая строка: " $0 "\n"}' "$file" | tee -a replace_paths.txt
+             change {print "Замена в файле: " FILENAME "\nСтрока: " NR "\nСтарая строка: " original "\nНовая строка: " $0 "\n"}' "$file" | tee -a transfer_replace_paths.txt
         sed -i 's/\/var\/www\/'$USER_ISP'\/data\/www\//\/home\/'$USER_CPANEL'\//g' "$file"
       fi
     done
@@ -1096,7 +1096,7 @@ function create_domain () {
 
     DOMAINS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain"| jq -r '[.doc.elem[] | .name."$"] | join(" ")')
 
-             curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r '[.doc.elem[] | {name: .name."$", php_version: .php_version."$"}] | .[] | "\(.name) \(.php_version)"' >> domain_info.txt
+             curl -s "$URL/?out=json&authinfo=$authinfo&func=webdomain" | jq -r '[.doc.elem[] | {name: .name."$", php_version: .php_version."$"}] | .[] | "\(.name) \(.php_version)"' >> transfer_domain_info.txt
 
 
     for DOMAIN in $DOMAINS
@@ -1106,11 +1106,11 @@ function create_domain () {
       RESULT=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].result')
 
       if [ "$RESULT" -eq 1 ]; then
-        echo "$DOMAIN: SUCCESS" >> created_domains.txt
+        echo "$DOMAIN: SUCCESS" >> transfer_created_domains.txt
         log "$DOMAIN: SUCCESS"
       else
         REASON=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].reason')
-        echo "$DOMAIN: FAILED, Reason: $REASON" >> created_domains.txt
+        echo "$DOMAIN: FAILED, Reason: $REASON" >> transfer_created_domains.txt
         log "$DOMAIN: FAILED, Reason: $REASON"
       fi
     done
@@ -1159,11 +1159,11 @@ function delete_domain () {
       RESULT=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].result')
 
       if [ "$RESULT" -eq 1 ]; then
-        echo "$DOMAIN: DELETE SUCCESS" >> deleted_domains.txt
+        echo "$DOMAIN: DELETE SUCCESS" >> transfer_deleted_domains.txt
         log "$DOMAIN: DELETE SUCCESS"
       else
         REASON=$(echo $RESPONSE | jq -r '.cpanelresult.data[0].reason')
-        echo "$DOMAIN: DELETE FAILED, Reason: $REASON" >> deleted_domains.txt
+        echo "$DOMAIN: DELETE FAILED, Reason: $REASON" >> transfer_deleted_domains.txt
         log "$DOMAIN: DELETE FAILED, Reason: $REASON"
       fi
     done
@@ -1199,12 +1199,12 @@ function create_mailbox () {
             uapi --output=jsonpretty Email add_pop email=$username password=$password domain=$domain
 
             # Display email and its password
-            echo "$email : $password" >> email_info.txt
+            echo "$email : $password" >> transfer_email_info.txt
             echo "Mailbox $username successfully created for domain $domain"
             log "Mailbox $username successfully created for domain $domain"
 
         else
-            echo "Mailbox $username cannot be created without corresponding domain $domain" >> email_info.txt
+            echo "Mailbox $username cannot be created without corresponding domain $domain" >> transfer_email_info.txt
             log "Mailbox $username cannot be created without corresponding domain $domain"
 
               curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
