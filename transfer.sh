@@ -81,19 +81,31 @@ function scrap-db () {
             # Create directory on the remote server
             sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mkdir -p $REMOTE_DIR"
 
-            # Dump the database on the remote server
-            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h localhost --port $DB_PORT -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
+            # Possible hosts for dumping the database
+            HOSTS=("localhost" "127.0.0.1" "")
 
-    # Check if dump was successful
-            dump_exists=$(sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "test -f $REMOTE_DIR/${DB_USER}_${DB}_dump.sql && echo exists")
+            for HOST in ${HOSTS[@]}; do
+                # Form the command based on whether the host is empty or not
+                if [ -z "$HOST" ]
+                then
+                    COMMAND="mysqldump -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
+                else
+                    COMMAND="mysqldump -h $HOST --port $DB_PORT -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
+                fi
 
-            if [ "$dump_exists" != "exists" ]; then
-                # If not, try without specifying host and port
-                echo ""
-                echo "Error to created dump with host and port. Trying without specifying host and port"
-                echo ""
-                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB > $REMOTE_DIR/${DB_USER}_${DB}_dump.sql"
-            fi
+                # Execute the command and check if it was successful
+                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "$COMMAND"
+                COMMAND_SUCCESS=$?
+
+                if [ $COMMAND_SUCCESS -eq 0 ]; then
+                    # Command was successful, break the loop
+                    break
+                else
+                    # Command failed, continue with the next HOST
+                    echo "Failed to create dump for DB: $DB with user: $DB_USER on HOST: $HOST"
+                    continue
+                fi
+            done
 
             # Write the information about the database, the user, the password and the dump file
             echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> transfer_db_info.txt
@@ -168,17 +180,31 @@ function scrap-db-local () {
             # Directory on the local server
             LOCAL_DIR="$DESTINATION"
 
-            # Dump the database on the remote server and save it on the local server
-            sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -h localhost --port $DB_PORT -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
+            # Possible hosts for dumping the database
+            HOSTS=("localhost" "127.0.0.1" "")
 
-            # Check if dump was successful
-            if [ ! -f "$LOCAL_DIR/${DB_USER}_${DB}_dump.sql" ]; then
-                # If not, try without specifying host and port
-                echo ""
-                echo "Error to created dump with host and port. Trying without specifying host and port"
-                echo ""
-                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "mysqldump -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
-            fi
+            for HOST in ${HOSTS[@]}; do
+                # Form the command based on whether the host is empty or not
+                if [ -z "$HOST" ]
+                then
+                    COMMAND="mysqldump -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB"
+                else
+                    COMMAND="mysqldump -h $HOST --port $DB_PORT -u$DB_USER -p$DB_PASS --single-transaction --add-drop-table --create-options --disable-keys --extended-insert --quick --set-charset --routines --triggers $DB"
+                fi
+
+                # Execute the command and check if it was successful
+                sshpass -p "$PASSWORD" ssh -o StrictHostKeyChecking=no $USER_ISP@$IP_REMOTE_SERVER "$COMMAND" > $LOCAL_DIR/${DB_USER}_${DB}_dump.sql
+                COMMAND_SUCCESS=$?
+
+                if [ $COMMAND_SUCCESS -eq 0 ]; then
+                    # Command was successful, break the loop
+                    break
+                else
+                    # Command failed, continue with the next HOST
+                    echo "Failed to create dump for DB: $DB with user: $DB_USER on HOST: $HOST"
+                    continue
+                fi
+            done
 
             # Write the information about the database, the user, the password and the dump file
             echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> transfer_db_info.txt
