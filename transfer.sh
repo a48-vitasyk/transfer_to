@@ -917,6 +917,15 @@ function upload_dump_on_cpanel () {
         # Get the database user and remove $USER_ISP from it
         DB_USER="${ORIG_DB_USER//$USER_ISP/}"
 
+         # Replace all special characters with "_" in DB_USER
+         DB_USER=$(echo "$DB_USER" | tr -c '[:alnum:]' '_')
+
+         # Remove trailing "_" in DB_USER
+         DB_USER=$(echo "$DB_USER" | sed 's/_*$//')
+
+         # Remove leading "_" in DB_USER
+         DB_USER=$(echo "$DB_USER" | sed 's/^_*//')
+
         # Get the database password and add $USER_CPANEL to it
         DB_PASS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db.users.edit&elname=$ORIG_DB_USER&elid=$ORIG_DB_USER&plid=$DB->mysql->$USER_ISP" | jq -r '.doc.password."$"')
         DB_PASS="$USER_CPANEL${DB_PASS}"
