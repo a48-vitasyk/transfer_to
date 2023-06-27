@@ -109,7 +109,7 @@ function scrap-db () {
 
             # Write the information about the database, the user, the password and the dump file
             echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> transfer_db_info.txt
-            log "${DB_USER}_${DB}_dump.sql  wrote  >> db_info.txt"
+            log "${DB_USER}_${DB}_dump.sql  wrote  >> transfer_db_info.txt"
         done
     done
     curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
@@ -208,7 +208,7 @@ function scrap-db-local () {
 
             # Write the information about the database, the user, the password and the dump file
             echo "$DB_PASS:${DB_USER}_${DB}_dump.sql" >> transfer_db_info.txt
-            log "${DB_USER}_${DB}_dump.sql  wrote  >> db_info.txt"
+            log "${DB_USER}_${DB}_dump.sql  wrote  >> transfer_db_info.txt"
         done
     done
      curl -X POST -H "Authorization: Bearer $OAUTH_TOKEN" -H 'Content-type: application/json;charset=utf-8' --data "{
@@ -858,8 +858,10 @@ function create_db_on_cpanel () {
          fi
          echo -e "DB_PASS:\n$DB_PASS"
 
-         # Remove $USER_ISP from DB_USER
-         DB_USER="${DB_USER//$USER_ISP/}"
+         # Remove $USER_ISP from DB_USER only if $DB_USER is not exactly equal to $USER_ISP
+         if [ "$DB_USER" != "$USER_ISP" ]; then
+             DB_USER="${DB_USER//$USER_ISP/}"
+         fi
 
          # Replace all special characters with "_" in DB_USER
          DB_USER=$(echo "$DB_USER" | tr -c '[:alnum:]' '_')
@@ -940,17 +942,21 @@ function upload_dump_on_cpanel () {
         # Get the original database user
         ORIG_DB_USER=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db.users&elname='%27$DB%27'&elid=$DB->mysql->$USER_ISP" | jq -r '.doc.elem[] | .name."$"')
 
-        # Get the database user and remove $USER_ISP from it
-        DB_USER="${ORIG_DB_USER//$USER_ISP/}"
+        # Get the database user and remove $USER_ISP from it if $ORIG_DB_USER is not exactly equal to $USER_ISP
+        if [ "$ORIG_DB_USER" != "$USER_ISP" ]; then
+            DB_USER="${ORIG_DB_USER//$USER_ISP/}"
+        else
+            DB_USER="$ORIG_DB_USER"
+        fi
 
-         # Replace all special characters with "_" in DB_USER
-         DB_USER=$(echo "$DB_USER" | tr -c '[:alnum:]' '_')
+        # Replace all special characters with "_" in DB_USER
+        DB_USER=$(echo "$DB_USER" | tr -c '[:alnum:]' '_')
 
-         # Remove trailing "_" in DB_USER
-         DB_USER=$(echo "$DB_USER" | sed 's/_*$//')
+        # Remove trailing "_" in DB_USER
+        DB_USER=$(echo "$DB_USER" | sed 's/_*$//')
 
-         # Remove leading "_" in DB_USER
-         DB_USER=$(echo "$DB_USER" | sed 's/^_*//')
+        # Remove leading "_" in DB_USER
+        DB_USER=$(echo "$DB_USER" | sed 's/^_*//')
 
         # Get the database password and add $USER_CPANEL to it
         DB_PASS=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=db.users.edit&elname=$ORIG_DB_USER&elid=$ORIG_DB_USER&plid=$DB->mysql->$USER_ISP" | jq -r '.doc.password."$"')
@@ -964,11 +970,11 @@ function upload_dump_on_cpanel () {
             # Upload the dump to the cPanel database
             mysql -u"$USER_CPANEL"_"$DB_USER" -p"$DB_PASS" "$USER_CPANEL"_"$DB" < ${ORIG_DB_USER}_${DB}_dump.sql
 
-           if [ $? -eq 0 ]; then
-               log "Dump for $DB uploaded successfully"
-           else
-               log "Error to upload $DB ..."
-           fi
+            if [ $? -eq 0 ]; then
+                log "Dump for $DB uploaded successfully"
+            else
+                log "Error to upload $DB ..."
+            fi
 
         else
             echo "Dump for $DB does not exist, skipping..."
