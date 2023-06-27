@@ -1376,6 +1376,17 @@ function process_transfer () {
             # Check for existence of email directory
             if [ -d "$DESTINATION_MAIL/email" ]; then
                 mv $DESTINATION_MAIL/email $DESTINATION_MAIL/mail
+
+                # Извлеките список почтовых доменов
+                local emails=$(curl -s "$URL/?out=json&authinfo=$authinfo&func=email" | jq -r '.doc.elem[] | .name."$"')
+
+                for email in $emails
+                do
+                    # Переместите папки на уровень выше
+                    mv $DESTINATION_MAIL/mail/$email/.maildir/cur $DESTINATION_MAIL/mail/$email/
+                    mv $DESTINATION_MAIL/mail/$email/.maildir/new $DESTINATION_MAIL/mail/$email/
+                    mv $DESTINATION_MAIL/mail/$email/.maildir/tmp $DESTINATION_MAIL/mail/$email/
+                done
             fi
         else
             log "Error executing rsync_email for domain $DOMAIN"
