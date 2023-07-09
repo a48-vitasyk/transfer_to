@@ -1532,6 +1532,7 @@ function process_transfer () {
         0)
             echo ""
             echo "Exit. "
+            kill -9 $$
             exit 0
             ;;  
         *)
