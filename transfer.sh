@@ -1543,6 +1543,18 @@ function process_transfer () {
 
 done
 
+# Start countdown (second)
+timeout 36000 process_transfer
+
+# After countdown cloused all bash transfer.sh
+if [ $? -eq 124 ]; then
+    echo "Script timed out. Killing all remaining processes."
+        log "Script timed out. Killing all remaining processes."
+
+    kill -9 $$
+    exit 0
+fi
+
 }
 
     process_transfer
